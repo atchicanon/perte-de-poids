@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Perte de Poids">
+    <title>⚖️ Perte de Poids Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #10b981;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f1f5f9;
+            --accent: #38bdf8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 15px 25px;
+            background: var(--surface);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            margin-bottom: 15px;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            font-size: 1rem;
+            padding: 10px 15px;
+            width: auto;
+            margin: 0;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(16, 185, 129, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .data-info {
+            flex: 1;
+        }
+
+        .data-date {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .data-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .chart-box {
+            background: var(--surface);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            height: 350px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.6;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        @media (max-width: 500px) {
+            body { padding: 15px; }
+            h1 { font-size: 2rem; }
+            .tabs { gap: 8px; }
+            .tab-btn { padding: 12px 18px; font-size: 1rem; }
+            .stat-grid { grid-template-columns: 1fr; }
+            .chart-box { height: 280px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>⚖️ Perte de Poids</h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('weight')">⚖️ Poids</button>
+        <button class="tab-btn" onclick="showTab('mesures')">📏 Mesures</button>
+        <button class="tab-btn" onclick="showTab('progress')">📊 Progression</button>
+        <button class="tab-btn" onclick="showTab('export')">📱 Export</button>
+    </div>
+
+    <!-- POIDS -->
+    <div id="weight" class="tab-content active">
+        <div class="card">
+            <input type="date" id="poidDate" value="">
+            <input type="number" id="poidValue" placeholder="Poids (kg)" step="0.1" min="30" max="250">
+            <input type="text" id="poidNotes" placeholder="Notes (optionnel)">
+            <button class="btn" onclick="addPoid()">➕ Ajouter</button>
+        </div>
+
+        <h2 style="font-size: 1.5rem; margin-bottom: 15px;">Historique</h2>
+        <div id="poidList"></div>
+    </div>
+
+    <!-- MESURES -->
+    <div id="mesures" class="tab-content">
+        <div class="card">
+            <input type="date" id="mesDate" value="">
+            <div class="grid-2">
+                <input type="number" id="mesBelly" placeholder="Ventre (cm)" step="0.1">
+                <input type="number" id="mesArm" placeholder="Bras (cm)" step="0.1">
+            </div>
+            <div class="grid-2">
+                <input type="number" id="mesChest" placeholder="Poitrine (cm)" step="0.1">
+                <input type="number" id="mesThigh" placeholder="Cuisse (cm)" step="0.1">
+            </div>
+            <button class="btn" onclick="addMesure()">➕ Ajouter</button>
+        </div>
+
+        <h2 style="font-size: 1.5rem; margin-bottom: 15px;">Résumé</h2>
+        <div id="mesSummary"></div>
+
+        <h2 style="font-size: 1.5rem; margin-bottom: 15px; margin-top: 25px;">Historique</h2>
+        <div id="mesList"></div>
+    </div>
+
+    <!-- PROGRESSION -->
+    <div id="progress" class="tab-content">
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-label">Actuel</div>
+                <div class="stat-value" id="statCurrent">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Initial</div>
+                <div class="stat-value" id="statInitial">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Perte</div>
+                <div class="stat-value" id="statLoss">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Min</div>
+                <div class="stat-value" id="statMin">-</div>
+            </div>
+        </div>
+
+        <h2 style="font-size: 1.5rem; margin-bottom: 15px;">Graphique Poids</h2>
+        <div class="chart-box">
+            <canvas id="chartPoid"></canvas>
+        </div>
+
+        <h2 style="font-size: 1.5rem; margin-bottom: 15px;">Mesures</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+            <div class="chart-box" style="height: 300px;">
+                <canvas id="chartBelly"></canvas>
+            </div>
+            <div class="chart-box" style="height: 300px;">
+                <canvas id="chartArm"></canvas>
+            </div>
+            <div class="chart-box" style="height: 300px;">
+                <canvas id="chartChest"></canvas>
+            </div>
+            <div class="chart-box" style="height: 300px;">
+                <canvas id="chartThigh"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPORT -->
+    <div id="export" class="tab-content">
+        <div class="card">
+            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📥 Importer JSON</button>
+            <button class="btn" onclick="exportJSON()">📤 Exporter JSON</button>
+            <button class="btn" onclick="downloadCSV()">📊 Télécharger CSV</button>
+            <button class="btn btn-secondary" onclick="shareApp()">📱 Partager</button>
+        </div>
+
+        <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+
+    <script>
+        let poids = JSON.parse(localStorage.getItem('poids') || '[]');
+        let mesures = JSON.parse(localStorage.getItem('mesures') || '[]');
+        let charts = {};
+
+        // Init dates
+        document.getElementById('poidDate').valueAsDate = new Date();
+        document.getElementById('mesDate').valueAsDate = new Date();
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tab === 'progress') setTimeout(updateCharts, 100);
+        }
+
+        function addPoid() {
+            const date = document.getElementById('poidDate').value;
+            const value = parseFloat(document.getElementById('poidValue').value);
+            const notes = document.getElementById('poidNotes').value;
+
+            if (!date || !value) return alert('⚠️ Date et poids requis');
+            
+            poids = poids.filter(p => p.date !== date);
+            poids.push({date, value, notes});
+            poids.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            localStorage.setItem('poids', JSON.stringify(poids));
+            document.getElementById('poidValue').value = '';
+            document.getElementById('poidNotes').value = '';
+            document.getElementById('poidDate').valueAsDate = new Date();
+            
+            renderPoids();
+            updateStats();
+        }
+
+        function renderPoids() {
+            const list = document.getElementById('poidList');
+            if (!poids.length) {
+                list.innerHTML = '<div class="empty">Aucun poids enregistré</div>';
+                return;
+            }
+            
+            list.innerHTML = [...poids].reverse().map((p, i) => {
+                const prev = poids[poids.length - 2 - i];
+                const diff = prev ? (p.value - prev.value).toFixed(1) : null;
+                return `
+                    <div class="data-item">
+                        <div class="data-info">
+                            <div class="data-date">${new Date(p.date).toLocaleDateString('fr-FR')}</div>
+                            <div class="data-value">${p.value} kg</div>
+                            ${diff ? `<div style="font-size:0.9rem; color:${diff>0?'#ef4444':'#10b981'}; margin-top:5px;">${diff>0?'+':'-'}${Math.abs(diff)}</div>` : ''}
+                            ${p.notes ? `<div style="font-size:0.85rem; opacity:0.6; margin-top:5px;">📝 ${p.notes}</div>` : ''}
+                        </div>
+                        <button class="btn-danger" onclick="removePoid('${p.date}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function removePoid(date) {
+            poids = poids.filter(p => p.date !== date);
+            localStorage.setItem('poids', JSON.stringify(poids));
+            renderPoids();
+            updateStats();
+        }
+
+        function addMesure() {
+            const date = document.getElementById('mesDate').value;
+            const belly = parseFloat(document.getElementById('mesBelly').value);
+            const arm = parseFloat(document.getElementById('mesArm').value);
+            const chest = parseFloat(document.getElementById('mesChest').value);
+            const thigh = parseFloat(document.getElementById('mesThigh').value);
+
+            if (!date || !belly || !arm || !chest || !thigh) return alert('⚠️ Tous les champs requis');
+            
+            mesures = mesures.filter(m => m.date !== date);
+            mesures.push({date, belly, arm, chest, thigh});
+            mesures.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            localStorage.setItem('mesures', JSON.stringify(mesures));
+            document.getElementById('mesBelly').value = '';
+            document.getElementById('mesArm').value = '';
+            document.getElementById('mesChest').value = '';
+            document.getElementById('mesThigh').value = '';
+            document.getElementById('mesDate').valueAsDate = new Date();
+            
+            renderMesures();
+            renderMesSummary();
+        }
+
+        function renderMesures() {
+            const list = document.getElementById('mesList');
+            if (!mesures.length) {
+                list.innerHTML = '<div class="empty">Aucune mesure enregistrée</div>';
+                return;
+            }
+            
+            list.innerHTML = [...mesures].reverse().map(m => `
+                <div class="data-item">
+                    <div class="data-info">
+                        <div class="data-date">${new Date(m.date).toLocaleDateString('fr-FR')}</div>
+                        <div style="font-size:1.1rem; margin-top:8px;">🫀 ${m.belly} | 💪 ${m.arm} | 🫀 ${m.chest} | 🦵 ${m.thigh}</div>
+                    </div>
+                    <button class="btn-danger" onclick="removeMesure('${m.date}')">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function removeMesure(date) {
+            mesures = mesures.filter(m => m.date !== date);
+            localStorage.setItem('mesures', JSON.stringify(mesures));
+            renderMesures();
+            renderMesSummary();
+        }
+
+        function renderMesSummary() {
+            const summary = document.getElementById('mesSummary');
+            if (!mesures.length) {
+                summary.innerHTML = '<div class="empty">Aucune mesure</div>';
+                return;
+            }
+            
+            const latest = mesures[mesures.length - 1];
+            const first = mesures[0];
+            
+            summary.innerHTML = `
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Ventre</div>
+                        <div class="stat-value">${latest.belly} cm</div>
+                        <div style="color:${first.belly>latest.belly?'#10b981':'#ef4444'}; font-size:0.9rem; margin-top:8px;">${first.belly>latest.belly?'✓ -':'+'}${Math.abs((latest.belly-first.belly).toFixed(1))}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Bras</div>
+                        <div class="stat-value">${latest.arm} cm</div>
+                        <div style="color:${first.arm>latest.arm?'#10b981':'#ef4444'}; font-size:0.9rem; margin-top:8px;">${first.arm>latest.arm?'✓ -':'+'}${Math.abs((latest.arm-first.arm).toFixed(1))}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Poitrine</div>
+                        <div class="stat-value">${latest.chest} cm</div>
+                        <div style="color:${first.chest>latest.chest?'#10b981':'#ef4444'}; font-size:0.9rem; margin-top:8px;">${first.chest>latest.chest?'✓ -':'+'}${Math.abs((latest.chest-first.chest).toFixed(1))}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Cuisse</div>
+                        <div class="stat-value">${latest.thigh} cm</div>
+                        <div style="color:${first.thigh>latest.thigh?'#10b981':'#ef4444'}; font-size:0.9rem; margin-top:8px;">${first.thigh>latest.thigh?'✓ -':'+'}${Math.abs((latest.thigh-first.thigh).toFixed(1))}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            if (!poids.length) {
+                document.getElementById('statCurrent').textContent = '-';
+                document.getElementById('statInitial').textContent = '-';
+                document.getElementById('statLoss').textContent = '-';
+                document.getElementById('statMin').textContent = '-';
+                return;
+            }
+            
+            const current = poids[poids.length - 1].value;
+            const initial = poids[0].value;
+            const min = Math.min(...poids.map(p => p.value));
+            const loss = (initial - current).toFixed(1);
+            
+            document.getElementById('statCurrent').textContent = current.toFixed(1) + ' kg';
+            document.getElementById('statInitial').textContent = initial.toFixed(1) + ' kg';
+            document.getElementById('statLoss').textContent = loss + ' kg';
+            document.getElementById('statMin').textContent = min.toFixed(1) + ' kg';
+        }
+
+        function updateCharts() {
+            if (poids.length > 0) {
+                const ctx = document.getElementById('chartPoid');
+                if (charts.poid) charts.poid.destroy();
+                charts.poid = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: poids.map(p => new Date(p.date).toLocaleDateString('fr-FR', {month:'short', day:'numeric'})),
+                        datasets: [{label: 'Poids (kg)', data: poids.map(p => p.value), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, pointRadius: 5, pointBackgroundColor: '#10b981'}]
+                    },
+                    options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {labels: {color: '#f1f5f9'}}}, scales: {y: {ticks: {color: '#f1f5f9'}, grid: {color: '#334155'}}, x: {ticks: {color: '#f1f5f9'}, grid: {color: '#334155'}}}}
+                });
+            }
+            
+            if (mesures.length > 0) {
+                const types = [
+                    {id: 'chartBelly', key: 'belly', label: 'Ventre', color: '#f59e0b'},
+                    {id: 'chartArm', key: 'arm', label: 'Bras', color: '#38bdf8'},
+                    {id: 'chartChest', key: 'chest', label: 'Poitrine', color: '#ec4899'},
+                    {id: 'chartThigh', key: 'thigh', label: 'Cuisse', color: '#a855f7'}
+                ];
+                
+                types.forEach(t => {
+                    const ctx = document.getElementById(t.id);
+                    if (charts[t.key]) charts[t.key].destroy();
+                    charts[t.key] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: mesures.map(m => new Date(m.date).toLocaleDateString('fr-FR', {month:'short', day:'numeric'})),
+                            datasets: [{label: t.label, data: mesures.map(m => m[t.key]), borderColor: t.color, backgroundColor: t.color + '20', tension: 0.3, fill: true, pointRadius: 4, pointBackgroundColor: t.color}]
+                        },
+                        options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {labels: {color: '#f1f5f9'}}}, scales: {y: {ticks: {color: '#f1f5f9'}, grid: {color: '#334155'}}, x: {ticks: {color: '#f1f5f9'}, grid: {color: '#334155'}}}}
+                    });
+                });
+            }
+        }
+
+        function exportJSON() {
+            const data = {poids, mesures, date: new Date().toISOString().split('T')[0]};
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `perte-poids-${data.date}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadCSV() {
+            let csv = 'Date,Poids (kg),Notes\n';
+            poids.forEach(p => csv += `"${p.date}","${p.value}","${p.notes}"\n`);
+            csv += '\n\nDate,Ventre,Bras,Poitrine,Cuisse\n';
+            mesures.forEach(m => csv += `"${m.date}","${m.belly}","${m.arm}","${m.chest}","${m.thigh}"\n`);
+            
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'perte-poids.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+
+      // Support ancien + nouveau format
+      poids = data.poids || data.weights || [];
+      mesures = data.mesures || data.measurements || [];
+
+      if (!Array.isArray(poids) || !Array.isArray(mesures)) {
+        throw new Error('Format invalide');
+      }
+
+      localStorage.setItem('poids', JSON.stringify(poids));
+      localStorage.setItem('mesures', JSON.stringify(mesures));
+
+      alert('✅ Import réussi');
+      renderPoids();
+      renderMesures();
+      renderMesSummary();
+      updateStats();
+
+    } catch (err) {
+      alert('❌ Fichier JSON invalide');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({title: 'Perte de Poids Tracker', text: 'Suivi poids & mesures', url: window.location.href});
+            } else {
+                alert('📱 iPhone: Safari → Partager → "Sur écran d\'accueil"');
+            }
+        }
+
+        renderPoids();
+        renderMesures();
+        renderMesSummary();
+        updateStats();
+    </script>
+</body>
+</html>
